@@ -378,9 +378,15 @@ private:
   // One selector per HitTimeResolutionCellIDs entry, paired with m_hitTimeResolutionValues.
   std::vector<k4ActsTracking::CellIDSelector> m_hitTimeResolutionSelectors{};
 
-  /// Time resolution (ns) for a hit: the first matching HitTimeResolutionCellIDs
-  /// selection wins. A hit not matched by any selection is a configuration error.
+  /// Time resolution (ns) for a hit: the per-hit time error persisted by the
+  /// digitiser is preferred; for hits without one (timeError <= 0, e.g. files
+  /// predating EDM4hep schema version 7) the first matching
+  /// HitTimeResolutionCellIDs selection wins. A hit with neither is a
+  /// configuration error.
   double hitTimeResolutionFor(const edm4hep::TrackerHitPlane& hit) const {
+    if (hit.getTimeError() > 0) {
+      return hit.getTimeError();
+    }
     for (std::size_t i = 0; i < m_hitTimeResolutionSelectors.size(); ++i) {
       if (m_hitTimeResolutionSelectors[i].accept(hit.getCellID())) {
         return m_hitTimeResolutionValues.value()[i];
